@@ -94,6 +94,7 @@
   function renderOptions() {
     $('enabled').checked = settings.enabled;
     $('wrap').checked = settings.wrap;
+    $('jumpSteps').value = String(settings.jumpSteps);
     $('showLabel').checked = settings.showLabel;
     $('cursorStyle').value = settings.cursorStyle;
     $('cursorColor').value = settings.cursorColor;
@@ -212,7 +213,7 @@
         flash(cur.c, cur.r);
       }
     } else {
-      cur = CK.move(cur, action, settings.wrap);
+      cur = CK.move(cur, action, settings.wrap, e.shiftKey ? settings.jumpSteps : 1);
     }
     renderBoard();
   }
@@ -221,6 +222,7 @@
     ['enabled', 'wrap', 'showLabel'].forEach(function (id) {
       $(id).onchange = function () { settings[id] = $(id).checked; persist(); renderBoard(); };
     });
+    $('jumpSteps').onchange = function () { settings.jumpSteps = parseInt($('jumpSteps').value, 10); persist(); };
     $('cursorStyle').onchange = function () { settings.cursorStyle = $('cursorStyle').value; persist(); renderBoard(); };
     $('cursorColor').oninput = function () { settings.cursorColor = $('cursorColor').value; persist(); renderBoard(); };
     $('cursorOpacity').oninput = function () { settings.cursorOpacity = parseFloat($('cursorOpacity').value); persist(); renderBoard(); };

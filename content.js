@@ -113,7 +113,7 @@
     if (action === 'select') {
       if (!e.repeat) clickAtCursor();
     } else {
-      cur = CK.move(cur, action, settings.wrap);
+      cur = CK.move(cur, action, settings.wrap, e.shiftKey ? settings.jumpSteps : 1);
     }
     render();
   }

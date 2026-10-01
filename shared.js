@@ -71,6 +71,7 @@ var CK = (function () {
     enabled: true,
     keys: JSON.parse(JSON.stringify(PRESETS[2].keys)),
     wrap: false,
+    jumpSteps: 3, // squares moved while Shift is held (1 turns the jump off)
     cursorColor: '#f5c518',
     cursorStyle: 'outline', // outline | fill | dot
     cursorOpacity: 0.9,
@@ -103,14 +104,15 @@ var CK = (function () {
   }
 
   // Cursor lives in screen space: c = column 0..7 from the left, r = row 0..7 from the top.
-  function move(cur, action, wrap) {
-    var dc = action === 'left' ? -1 : action === 'right' ? 1 : 0;
-    var dr = action === 'up' ? -1 : action === 'down' ? 1 : 0;
+  function move(cur, action, wrap, steps) {
+    steps = steps || 1;
+    var dc = action === 'left' ? -steps : action === 'right' ? steps : 0;
+    var dr = action === 'up' ? -steps : action === 'down' ? steps : 0;
     var c = cur.c + dc;
     var r = cur.r + dr;
     if (wrap) {
-      c = (c + 8) % 8;
-      r = (r + 8) % 8;
+      c = ((c % 8) + 8) % 8;
+      r = ((r % 8) + 8) % 8;
     } else {
       c = Math.max(0, Math.min(7, c));
       r = Math.max(0, Math.min(7, r));
