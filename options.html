@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keyboard Control Settings</title>
+<style>
+  :root {
+    --bg: #1f1e1b;
+    --panel: #2a2926;
+    --panel-2: #34332f;
+    --line: #45443f;
+    --text: #f1efe9;
+    --muted: #a8a59b;
+    --accent: #81b64c;
+    --accent-dark: #5f8f35;
+    --light-sq: #ebecd0;
+    --dark-sq: #739552;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 28px 20px 60px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+  .grid { display: grid; grid-template-columns: 1fr 420px; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin-bottom: 20px; }
+  .presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+  .preset {
+    text-align: left; background: var(--panel-2); border: 2px solid transparent; color: var(--text);
+    border-radius: 8px; padding: 10px 12px; cursor: pointer; font: inherit;
+  }
+  .preset:hover { border-color: var(--line); }
+  .preset.on { border-color: var(--accent); }
+  .preset b { display: block; }
+  .preset span { color: var(--muted); font-size: 12.5px; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; }
+  .row .name { width: 110px; flex: none; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: 1; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; background: #151412; border: 1px solid var(--line);
+    border-bottom-width: 3px; border-radius: 6px; padding: 3px 8px; font-weight: 600; font-size: 13px;
+  }
+  .chip button { all: unset; cursor: pointer; color: var(--muted); font-size: 15px; line-height: 1; }
+  .chip button:hover { color: #ff7b72; }
+  .add {
+    background: transparent; color: var(--accent); border: 1px dashed var(--accent-dark); border-radius: 6px;
+    padding: 3px 10px; cursor: pointer; font: inherit; font-size: 13px;
+  }
+  .add.capturing { background: var(--accent); color: #10200a; border-style: solid; }
+  .opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .opt:first-of-type { border-top: 0; }
+  .opt small { display: block; color: var(--muted); }
+  select, input[type=color] { background: #151412; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font: inherit; }
+  input[type=color] { padding: 0; width: 44px; height: 30px; }
+  input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
+  input[type=range] { accent-color: var(--accent); }
+  .note { color: #f0b429; font-size: 13px; min-height: 18px; margin-top: 8px; }
+  .reset { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; font: inherit; }
+  .reset:hover { color: var(--text); }
+
+  /* test board */
+  .sticky { position: sticky; top: 16px; }
+  .test-board {
+    position: relative; width: 100%; aspect-ratio: 1; display: grid;
+    grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+    border-radius: 6px; overflow: hidden; outline: none;
+  }
+  .test-board.dim { filter: saturate(.5) brightness(.8); }
+  .sq { position: relative; display: flex; align-items: flex-end; justify-content: flex-start; font-size: 10px; font-weight: 700; padding: 2px 3px; }
+  .sq.l { background: var(--light-sq); color: var(--dark-sq); }
+  .sq.d { background: var(--dark-sq); color: var(--light-sq); }
+  .sq.hit::after {
+    content: ""; position: absolute; inset: 0; background: rgba(255, 235, 59, .45); animation: fade .9s forwards;
+  }
+  @keyframes fade { to { opacity: 0; } }
+  .t-cursor { position: absolute; width: 12.5%; height: 12.5%; pointer-events: none; transition: left .06s, top .06s; }
+  .t-label {
+    position: absolute; right: 3px; bottom: 2px; font: 700 12px/1 system-ui, sans-serif; color: #111;
+    background: rgba(255,255,255,.85); padding: 2px 4px; border-radius: 3px;
+  }
+  .readout { display: flex; gap: 10px; margin-top: 12px; }
+  .readout div { flex: 1; background: var(--panel-2); border-radius: 8px; padding: 8px 10px; }
+  .readout small { display: block; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .readout b { font-size: 16px; }
+  .hint { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+  .toolbar { display: flex; gap: 14px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .toolbar label { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; }
+  .saved { color: var(--accent); font-size: 12px; opacity: 0; transition: opacity .2s; }
+  .saved.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Chess.com Keyboard Control</h1>
+  <p class="sub">Pick a layout, tweak the keys, and try it on the test board. Changes save automatically and apply to open chess.com tabs right away.</p>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>Layouts</h2>
+        <div class="presets" id="presets"></div>
+      </div>
+
+      <div class="card">
+        <h2>Key bindings <span class="saved" id="saved">Saved</span></h2>
+        <div id="bindings"></div>
+        <div class="note" id="note"></div>
+      </div>
+
+      <div class="card">
+        <h2>Behavior and look</h2>
+        <div class="opt">
+          <div>Enable on chess.com<small>Turn the extension off without uninstalling it.</small></div>
+          <input type="checkbox" id="enabled">
+        </div>
+        <div class="opt">
+          <div>Wrap around edges<small>Moving off one side puts the cursor on the opposite side.</small></div>
+          <input type="checkbox" id="wrap">
+        </div>
+        <div class="opt">
+          <div>Show square name<small>Small label like e4 in the cursor corner.</small></div>
+          <input type="checkbox" id="showLabel">
+        </div>
+        <div class="opt">
+          <div>Cursor style</div>
+          <select id="cursorStyle">
+            <option value="outline">Outline</option>
+            <option value="fill">Filled square</option>
+            <option value="dot">Center dot</option>
+          </select>
+        </div>
+        <div class="opt">
+          <div>Cursor color</div>
+          <input type="color" id="cursorColor">
+        </div>
+        <div class="opt">
+          <div>Cursor opacity</div>
+          <input type="range" id="cursorOpacity" min="0.2" max="1" step="0.05">
+        </div>
+        <div class="opt">
+          <div>Defaults<small>Restore the original bindings and look.</small></div>
+          <button class="reset" id="reset">Reset all</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sticky">
+      <div class="card">
+        <h2>Test board</h2>
+        <div class="test-board dim" id="board" tabindex="0"></div>
+        <div class="readout">
+          <div><small>Last key</small><b id="rKey">none</b></div>
+          <div><small>Action</small><b id="rAct">none</b></div>
+          <div><small>Clicks</small><b id="rClicks">0</b></div>
+        </div>
+        <div class="toolbar">
+          <label><input type="checkbox" id="flip"> Play as black (flipped)</label>
+        </div>
+        <p class="hint">Click the board or press any bound key to start. Your current bindings drive this board, and the yellow flash shows where a click would land.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="shared.js"></script>
+<script src="options.js"></script>
+</body>
+</html>
