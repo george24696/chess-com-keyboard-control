@@ -16,6 +16,40 @@
     return board.classList.contains('flipped');
   }
 
+  function median(list) {
+    var a = list.slice().sort(function (x, y) { return x - y; });
+    return a[Math.floor(a.length / 2)];
+  }
+
+  // The board element's own box is not always the 8x8 grid (some game modes add padding or
+  // extra chrome), so derive the grid from the pieces, whose classes (square-FR) tell us
+  // exactly which cell each one sits in. Median over all pieces ignores one that is mid-drag.
+  function getGrid(board) {
+    var flipped = isFlipped(board);
+    var els = board.querySelectorAll('.piece, .highlight, .hint');
+    var lefts = [];
+    var tops = [];
+    var sizes = [];
+    for (var i = 0; i < els.length; i++) {
+      var m = /(?:^|\s)square-(\d)(\d)(?:\s|$)/.exec(els[i].className);
+      if (!m) continue;
+      var rect = els[i].getBoundingClientRect();
+      if (rect.width < 10) continue;
+      var file = +m[1];
+      var rank = +m[2];
+      var col = flipped ? 8 - file : file - 1;
+      var row = flipped ? rank - 1 : 8 - rank;
+      lefts.push(rect.left - col * rect.width);
+      tops.push(rect.top - row * rect.width);
+      sizes.push(rect.width);
+    }
+    if (sizes.length) {
+      return { left: median(lefts), top: median(tops), size: median(sizes) };
+    }
+    var r = board.getBoundingClientRect();
+    return { left: r.left, top: r.top, size: r.width / 8 };
+  }
+
   function ensureOverlay() {
     if (overlay && overlay.isConnected) return;
     overlay = document.createElement('div');
@@ -46,9 +80,10 @@
     }
     ensureOverlay();
     overlay.style.display = active ? 'block' : 'none';
-    var s = rect.width / 8;
-    cursorEl.style.left = rect.left + cur.c * s + 'px';
-    cursorEl.style.top = rect.top + cur.r * s + 'px';
+    var g = getGrid(board);
+    var s = g.size;
+    cursorEl.style.left = g.left + cur.c * s + 'px';
+    cursorEl.style.top = g.top + cur.r * s + 'px';
     cursorEl.style.width = s + 'px';
     cursorEl.style.height = s + 'px';
     CK.applyCursorStyle(cursorEl, settings);
@@ -76,10 +111,9 @@
   function clickAtCursor() {
     var board = getBoard();
     if (!board) return;
-    var rect = board.getBoundingClientRect();
-    var s = rect.width / 8;
-    var x = rect.left + (cur.c + 0.5) * s;
-    var y = rect.top + (cur.r + 0.5) * s;
+    var g = getGrid(board);
+    var x = g.left + (cur.c + 0.5) * g.size;
+    var y = g.top + (cur.r + 0.5) * g.size;
     var target = document.elementFromPoint(x, y) || board;
 
     fire(target, PointerEvent, 'pointermove', x, y, 0);
