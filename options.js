@@ -93,9 +93,32 @@
     });
   }
 
+  var SWATCHES = ['#f5c518', '#ff4d4d', '#ff8a1f', '#2ee6a6', '#33b5ff', '#b266ff', '#ff5fc8', '#ffffff', '#111111'];
+
+  function renderSwatches() {
+    var box = $('swatches');
+    box.innerHTML = '';
+    SWATCHES.forEach(function (color) {
+      var b = document.createElement('button');
+      b.className = 'swatch' + (settings.cursorColor.toLowerCase() === color ? ' on' : '');
+      b.style.background = color;
+      b.title = color;
+      b.onclick = function () {
+        settings.cursorColor = color;
+        $('cursorColor').value = color;
+        persist();
+        renderSwatches();
+        renderBoard();
+      };
+      box.appendChild(b);
+    });
+  }
+
   function renderOptions() {
     $('enabled').checked = settings.enabled;
     $('wrap').checked = settings.wrap;
+    $('selectStartsGame').checked = settings.selectStartsGame;
+    renderSwatches();
     $('jumpSteps').value = String(settings.jumpSteps);
     $('showLabel').checked = settings.showLabel;
     $('cursorStyle').value = settings.cursorStyle;
@@ -269,12 +292,12 @@
   }
 
   function bindOptions() {
-    ['enabled', 'wrap', 'showLabel'].forEach(function (id) {
+    ['enabled', 'wrap', 'showLabel', 'selectStartsGame'].forEach(function (id) {
       $(id).onchange = function () { settings[id] = $(id).checked; persist(); renderBoard(); };
     });
     $('jumpSteps').onchange = function () { settings.jumpSteps = parseInt($('jumpSteps').value, 10); persist(); };
     $('cursorStyle').onchange = function () { settings.cursorStyle = $('cursorStyle').value; persist(); renderBoard(); };
-    $('cursorColor').oninput = function () { settings.cursorColor = $('cursorColor').value; persist(); renderBoard(); };
+    $('cursorColor').oninput = function () { settings.cursorColor = $('cursorColor').value; persist(); renderSwatches(); renderBoard(); };
     $('cursorOpacity').oninput = function () { settings.cursorOpacity = parseFloat($('cursorOpacity').value); persist(); renderBoard(); };
     $('flip').onchange = renderBoard;
     $('reset').onclick = function () {

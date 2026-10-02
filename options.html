@@ -60,6 +60,9 @@
   input[type=color] { padding: 0; width: 44px; height: 30px; }
   input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
   input[type=range] { accent-color: var(--accent); }
+  .swatches { display: flex; gap: 6px; margin-left: auto; margin-right: 10px; }
+  .swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #555; cursor: pointer; padding: 0; }
+  .swatch.on { border-color: #fff; }
   .note { color: #f0b429; font-size: 13px; min-height: 18px; margin-top: 8px; }
   .reset { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; font: inherit; }
   .reset:hover { color: var(--text); }
@@ -126,6 +129,10 @@
           <input type="checkbox" id="wrap">
         </div>
         <div class="opt">
+          <div>Click key starts a new game<small>While the game-over dialog is open, the click key presses New game.</small></div>
+          <input type="checkbox" id="selectStartsGame">
+        </div>
+        <div class="opt">
           <div>Shift jump distance<small>Hold Shift while moving to jump this many squares at once.</small></div>
           <select id="jumpSteps">
             <option value="1">Off (1 square)</option>
@@ -151,6 +158,7 @@
         </div>
         <div class="opt">
           <div>Cursor color</div>
+          <div class="swatches" id="swatches"></div>
           <input type="color" id="cursorColor">
         </div>
         <div class="opt">

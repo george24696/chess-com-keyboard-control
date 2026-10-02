@@ -8,6 +8,7 @@ A Chrome extension that lets you play on chess.com with your keyboard. A cursor 
 - Movement keys and click keys are fully configurable, and several keys can share one action
 - Settings page with ready-made layouts (WASD, arrows, both, Vim, IJKL, ESDF, numpad) and a test board that uses your live bindings so you can try a layout before playing
 - Right-click equivalent: tap C to toggle a red highlight on a square, or hold C while moving the cursor to draw an arrow, so you can plan moves before playing them
+- After a game ends, press N (new game) or R (rematch) without touching the mouse. While the game-over dialog is open the click key also starts a new game. Game over is detected from the dialog's buttons, so it does not depend on chess.com's CSS class names
 - Hold Shift to jump several squares at once (3 by default, 1 to 7 in settings)
 - Cursor style (outline, fill, dot), color, opacity, square-name label and edge wrap
 - Cursor hides when you use the mouse and comes back when you press a key

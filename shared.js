@@ -1,6 +1,6 @@
 // Shared by the content script, the settings page and the popup.
 var CK = (function () {
-  var ACTIONS = ['up', 'down', 'left', 'right', 'select', 'mark'];
+  var ACTIONS = ['up', 'down', 'left', 'right', 'select', 'mark', 'newGame', 'rematch'];
 
   var ACTION_LABELS = {
     up: 'Move up',
@@ -8,7 +8,9 @@ var CK = (function () {
     left: 'Move left',
     right: 'Move right',
     select: 'Click square',
-    mark: 'Highlight / arrow (hold)'
+    mark: 'Highlight / arrow (hold)',
+    newGame: 'New game (after a game)',
+    rematch: 'Rematch (after a game)'
   };
 
   // Keys are stored as KeyboardEvent.code so layouts like WASD stay on the same
@@ -69,12 +71,17 @@ var CK = (function () {
   ];
 
   // Right-click equivalent: tap to toggle a red highlight, hold while moving to draw an arrow.
-  PRESETS.forEach(function (p) { p.keys.mark = ['KeyC']; });
+  PRESETS.forEach(function (p) {
+    p.keys.mark = ['KeyC'];
+    p.keys.newGame = ['KeyN'];
+    p.keys.rematch = ['KeyR'];
+  });
 
   var DEFAULTS = {
     enabled: true,
     keys: JSON.parse(JSON.stringify(PRESETS[2].keys)),
     wrap: false,
+    selectStartsGame: true, // click key presses New game while the game-over dialog is open
     jumpSteps: 3, // squares moved while Shift is held (1 turns the jump off)
     cursorColor: '#f5c518',
     cursorStyle: 'outline', // outline | fill | dot

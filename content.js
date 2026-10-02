@@ -7,6 +7,7 @@
   var overlay = null;
   var cursorEl = null;
   var labelEl = null;
+  var hintEl = null;
   var markCode = null; // key currently held for highlight/arrow marking
 
   function getBoard() {
@@ -51,6 +52,43 @@
     return { left: r.left, top: r.top, size: r.width / 8 };
   }
 
+  function isVisible(el) {
+    var r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden';
+  }
+
+  // Game-over detection by button text rather than class names (chess.com renames those often).
+  // "Rematch" only exists once a game has ended. The dialog sits on top of the board, so a
+  // button whose center is inside the board rect belongs to the dialog.
+  function scanGameOver() {
+    var board = getBoard();
+    var br = board && board.getBoundingClientRect();
+    var found = { rematch: null, newGame: null, modal: false, over: false };
+    var fallback = null;
+    var els = document.querySelectorAll('button, a, [role="button"]');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      var text = (el.innerText || '').replace(/\s+/g, ' ').trim();
+      if (!text || text.length > 30) continue;
+      var isRematch = /^rematch$/i.test(text);
+      var isNew = /^new\s*\d/i.test(text) || /^new game$/i.test(text);
+      if (!isRematch && !isNew) continue;
+      if (!isVisible(el)) continue;
+      var r = el.getBoundingClientRect();
+      var cx = r.left + r.width / 2;
+      var cy = r.top + r.height / 2;
+      var inModal = !!br && cx > br.left && cx < br.right && cy > br.top && cy < br.bottom;
+      if (isRematch && (!found.rematch || inModal)) found.rematch = el;
+      if (isNew) {
+        if (inModal) { found.newGame = el; found.modal = true; }
+        else if (!fallback && /^new\s*\d/i.test(text)) fallback = el;
+      }
+    }
+    if (!found.newGame) found.newGame = fallback;
+    found.over = !!found.rematch || found.modal;
+    return found;
+  }
+
   function ensureOverlay() {
     if (overlay && overlay.isConnected) return;
     overlay = document.createElement('div');
@@ -65,6 +103,13 @@
       'background:rgba(255,255,255,0.85);padding:2px 4px;border-radius:3px;pointer-events:none;';
     cursorEl.appendChild(labelEl);
     overlay.appendChild(cursorEl);
+    hintEl = document.createElement('div');
+    hintEl.style.cssText =
+      'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:none;' +
+      'background:#262421;color:#fff;font:600 14px/1.3 system-ui,sans-serif;padding:8px 14px;' +
+      'border-radius:8px;border:2px solid #81b64c;box-shadow:0 4px 14px rgba(0,0,0,.5);' +
+      'pointer-events:none;white-space:nowrap;';
+    overlay.appendChild(hintEl);
     document.documentElement.appendChild(overlay);
   }
 
@@ -80,7 +125,11 @@
       return;
     }
     ensureOverlay();
-    overlay.style.display = active ? 'block' : 'none';
+    var over = scanGameOver();
+    overlay.style.display = active || over.modal ? 'block' : 'none';
+    cursorEl.style.display = over.modal ? 'none' : 'block';
+    hintEl.style.display = over.modal ? 'block' : 'none';
+    if (over.modal) hintEl.textContent = gameOverHint();
     var g = getGrid(board);
     var s = g.size;
     cursorEl.style.left = g.left + cur.c * s + 'px';
@@ -90,6 +139,21 @@
     CK.applyCursorStyle(cursorEl, markCode ? Object.assign({}, settings, { cursorColor: '#eb6150' }) : settings);
     labelEl.style.display = settings.showLabel ? 'block' : 'none';
     labelEl.textContent = CK.squareName(cur, isFlipped(board));
+  }
+
+  function firstKey(action) {
+    var k = settings.keys[action] || [];
+    return k.length ? CK.keyLabel(k[0]) : null;
+  }
+
+  function gameOverHint() {
+    var parts = [];
+    var n = firstKey('newGame');
+    var sel = settings.selectStartsGame ? firstKey('select') : null;
+    var r = firstKey('rematch');
+    if (n || sel) parts.push([n, sel].filter(Boolean).join(' / ') + ': new game');
+    if (r) parts.push(r + ': rematch');
+    return parts.join('   |   ');
   }
 
   function fire(target, Ctor, type, x, y, buttons, button) {
@@ -183,8 +247,19 @@
     e.stopPropagation();
 
     active = true;
-    if (action === 'select') {
-      if (!e.repeat) clickAtCursor();
+    if (action === 'newGame' || action === 'rematch') {
+      if (!e.repeat) {
+        var o = scanGameOver();
+        var btn = action === 'rematch' ? o.rematch : o.newGame;
+        if (o.over && btn) btn.click();
+      }
+    } else if (action === 'select') {
+      var go = settings.selectStartsGame && scanGameOver();
+      if (go && go.modal && go.newGame) {
+        if (!e.repeat) go.newGame.click();
+      } else if (!e.repeat) {
+        clickAtCursor();
+      }
     } else if (action === 'mark') {
       if (!e.repeat && !markCode) startMark(e.code);
     } else {
