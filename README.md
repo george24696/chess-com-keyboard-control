@@ -7,6 +7,7 @@ A Chrome extension that lets you play on chess.com with your keyboard. A cursor 
 - Cursor overlay that follows the board, including when you play as black (the board flips)
 - Movement keys and click keys are fully configurable, and several keys can share one action
 - Settings page with ready-made layouts (WASD, arrows, both, Vim, IJKL, ESDF, numpad) and a test board that uses your live bindings so you can try a layout before playing
+- Right-click equivalent: tap C to toggle a red highlight on a square, or hold C while moving the cursor to draw an arrow, so you can plan moves before playing them
 - Hold Shift to jump several squares at once (3 by default, 1 to 7 in settings)
 - Cursor style (outline, fill, dot), color, opacity, square-name label and edge wrap
 - Cursor hides when you use the mouse and comes back when you press a key

@@ -79,6 +79,8 @@
     content: ""; position: absolute; inset: 0; background: rgba(255, 235, 59, .45); animation: fade .9s forwards;
   }
   @keyframes fade { to { opacity: 0; } }
+  .sq.mk::before { content: ""; position: absolute; inset: 0; background: rgba(235, 97, 80, .8); }
+  .t-arrows { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   .t-cursor { position: absolute; width: 12.5%; height: 12.5%; pointer-events: none; transition: left .06s, top .06s; }
   .t-label {
     position: absolute; right: 3px; bottom: 2px; font: 700 12px/1 system-ui, sans-serif; color: #111;
@@ -174,7 +176,7 @@
         <div class="toolbar">
           <label><input type="checkbox" id="flip"> Play as black (flipped)</label>
         </div>
-        <p class="hint">Click the board or press any bound key to start. Your current bindings drive this board, and the yellow flash shows where a click would land.</p>
+        <p class="hint">Click the board or press any bound key to start. Your current bindings drive this board, and the yellow flash shows where a click would land. Tap the highlight key for a red square, or hold it while moving to draw an arrow (like right-click and drag). Clicking clears marks.</p>
       </div>
     </div>
   </div>

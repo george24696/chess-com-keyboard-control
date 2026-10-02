@@ -4,7 +4,9 @@
   var capturing = null; // action currently waiting for a key
   var cur = { c: 4, r: 6 };
   var clicks = 0;
-  var cursorEl, labelEl;
+  var cursorEl, labelEl, arrowsEl;
+  var markCode = null, markStart = null;
+  var marks = { squares: {}, arrows: {} };
   var savedTimer;
 
   var RESERVED = ['Escape', 'Tab', 'ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight',
@@ -119,6 +121,10 @@
     labelEl.className = 't-label';
     cursorEl.appendChild(labelEl);
     board.appendChild(cursorEl);
+    arrowsEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    arrowsEl.setAttribute('viewBox', '0 0 8 8');
+    arrowsEl.setAttribute('class', 't-arrows');
+    board.appendChild(arrowsEl);
 
     board.addEventListener('focus', function () { board.classList.remove('dim'); });
     board.addEventListener('blur', function () { board.classList.add('dim'); });
@@ -151,6 +157,42 @@
     if (c === 0) t += flipped ? r + 1 : 8 - r;
     if (r === 7) t += flipped ? 'hgfedcba'[c] : 'abcdefgh'[c];
     return t;
+  }
+
+  // Marks mirror chess.com's right-click: tap = red square, hold and move = arrow.
+  function renderMarks() {
+    var sqs = $('board').querySelectorAll('.sq');
+    for (var i = 0; i < sqs.length; i++) {
+      var key = sqs[i].dataset.c + ',' + sqs[i].dataset.r;
+      sqs[i].classList.toggle('mk', !!marks.squares[key]);
+    }
+    var svg = '';
+    Object.keys(marks.arrows).forEach(function (k) {
+      var p = k.split(',').map(Number); // c1,r1,c2,r2
+      var x1 = p[0] + 0.5, y1 = p[1] + 0.5, x2 = p[2] + 0.5, y2 = p[3] + 0.5;
+      var len = Math.hypot(x2 - x1, y2 - y1);
+      var ux = (x2 - x1) / len, uy = (y2 - y1) / len;
+      var head = 0.38, half = 0.3;
+      var bx = x2 - ux * head, by = y2 - uy * head;
+      svg += '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + bx + '" y2="' + by + '" stroke="#f5a623" stroke-width="0.18" stroke-linecap="round" opacity="0.85"/>' +
+        '<polygon points="' + x2 + ',' + y2 + ' ' + (bx - uy * half) + ',' + (by + ux * half) + ' ' + (bx + uy * half) + ',' + (by - ux * half) + '" fill="#f5a623" opacity="0.85"/>';
+    });
+    arrowsEl.innerHTML = svg;
+  }
+
+  function endMark() {
+    if (!markStart) return;
+    if (markStart.c === cur.c && markStart.r === cur.r) {
+      var k = cur.c + ',' + cur.r;
+      if (marks.squares[k]) delete marks.squares[k]; else marks.squares[k] = true;
+    } else {
+      var a = markStart.c + ',' + markStart.r + ',' + cur.c + ',' + cur.r;
+      if (marks.arrows[a]) delete marks.arrows[a]; else marks.arrows[a] = true;
+    }
+    markCode = null;
+    markStart = null;
+    renderMarks();
+    renderBoard();
   }
 
   function renderAll() {
@@ -206,8 +248,12 @@
     if (!action) return;
 
     e.preventDefault();
-    if (action === 'select') {
+    if (action === 'mark') {
+      if (!e.repeat && !markStart) { markCode = e.code; markStart = { c: cur.c, r: cur.r }; }
+    } else if (action === 'select') {
       if (!e.repeat) {
+        marks = { squares: {}, arrows: {} };
+        renderMarks();
         clicks++;
         $('rClicks').textContent = clicks;
         flash(cur.c, cur.r);
@@ -216,6 +262,10 @@
       cur = CK.move(cur, action, settings.wrap, e.shiftKey ? settings.jumpSteps : 1);
     }
     renderBoard();
+  }
+
+  function onKeyUp(e) {
+    if (markCode && e.code === markCode) endMark();
   }
 
   function bindOptions() {
@@ -239,6 +289,7 @@
   buildBoard();
   bindOptions();
   window.addEventListener('keydown', onKeyDown, true);
+  window.addEventListener('keyup', onKeyUp, true);
   CK.load(function (s) {
     settings = s;
     renderAll();

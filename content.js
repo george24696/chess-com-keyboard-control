@@ -7,6 +7,7 @@
   var overlay = null;
   var cursorEl = null;
   var labelEl = null;
+  var markCode = null; // key currently held for highlight/arrow marking
 
   function getBoard() {
     return document.querySelector('wc-chess-board, chess-board');
@@ -86,16 +87,16 @@
     cursorEl.style.top = g.top + cur.r * s + 'px';
     cursorEl.style.width = s + 'px';
     cursorEl.style.height = s + 'px';
-    CK.applyCursorStyle(cursorEl, settings);
+    CK.applyCursorStyle(cursorEl, markCode ? Object.assign({}, settings, { cursorColor: '#eb6150' }) : settings);
     labelEl.style.display = settings.showLabel ? 'block' : 'none';
     labelEl.textContent = CK.squareName(cur, isFlipped(board));
   }
 
-  function fire(target, Ctor, type, x, y, buttons) {
+  function fire(target, Ctor, type, x, y, buttons, button) {
     var init = {
       bubbles: true, cancelable: true, composed: true, view: window,
       clientX: x, clientY: y, screenX: x + window.screenX, screenY: y + window.screenY,
-      button: 0, buttons: buttons
+      button: button || 0, buttons: buttons
     };
     if (Ctor === PointerEvent) {
       init.pointerId = 1;
@@ -108,13 +109,20 @@
     target.dispatchEvent(new Ctor(type, init));
   }
 
-  function clickAtCursor() {
+  // Center of the cursor's square in viewport pixels, plus the element under it.
+  function cursorPoint() {
     var board = getBoard();
-    if (!board) return;
+    if (!board) return null;
     var g = getGrid(board);
     var x = g.left + (cur.c + 0.5) * g.size;
     var y = g.top + (cur.r + 0.5) * g.size;
-    var target = document.elementFromPoint(x, y) || board;
+    return { x: x, y: y, target: document.elementFromPoint(x, y) || board };
+  }
+
+  function clickAtCursor() {
+    var p = cursorPoint();
+    if (!p) return;
+    var x = p.x, y = p.y, target = p.target;
 
     fire(target, PointerEvent, 'pointermove', x, y, 0);
     fire(target, MouseEvent, 'mousemove', x, y, 0);
@@ -125,6 +133,37 @@
       fire(target, MouseEvent, 'mouseup', x, y, 0);
       fire(target, MouseEvent, 'click', x, y, 0);
     }, 15);
+  }
+
+  // Marking mirrors the right mouse button: pressing the key is right-button-down on the
+  // cursor square, moving the cursor drags, releasing is right-button-up. Release on the
+  // same square and chess.com toggles a red highlight; release elsewhere and it draws an arrow.
+  function startMark(code) {
+    var p = cursorPoint();
+    if (!p) return;
+    markCode = code;
+    fire(p.target, PointerEvent, 'pointermove', p.x, p.y, 0, -1);
+    fire(p.target, MouseEvent, 'mousemove', p.x, p.y, 0, -1);
+    fire(p.target, PointerEvent, 'pointerdown', p.x, p.y, 2, 2);
+    fire(p.target, MouseEvent, 'mousedown', p.x, p.y, 2, 2);
+  }
+
+  function dragMark() {
+    var p = cursorPoint();
+    if (!p || !markCode) return;
+    fire(p.target, PointerEvent, 'pointermove', p.x, p.y, 2, -1);
+    fire(p.target, MouseEvent, 'mousemove', p.x, p.y, 2, -1);
+  }
+
+  function endMark() {
+    if (!markCode) return;
+    markCode = null;
+    var p = cursorPoint();
+    if (!p) return;
+    fire(p.target, PointerEvent, 'pointerup', p.x, p.y, 0, 2);
+    fire(p.target, MouseEvent, 'mouseup', p.x, p.y, 0, 2);
+    fire(p.target, MouseEvent, 'contextmenu', p.x, p.y, 0, 2);
+    render();
   }
 
   function isEditable(el) {
@@ -146,10 +185,20 @@
     active = true;
     if (action === 'select') {
       if (!e.repeat) clickAtCursor();
+    } else if (action === 'mark') {
+      if (!e.repeat && !markCode) startMark(e.code);
     } else {
       cur = CK.move(cur, action, settings.wrap, e.shiftKey ? settings.jumpSteps : 1);
+      dragMark();
     }
     render();
+  }
+
+  function onKeyUp(e) {
+    if (markCode && e.code === markCode) {
+      e.preventDefault();
+      endMark();
+    }
   }
 
   // A real mouse click means the player is using the mouse, so get the cursor out of the way.
@@ -170,6 +219,8 @@
   });
 
   window.addEventListener('keydown', onKeyDown, true);
+  window.addEventListener('keyup', onKeyUp, true);
+  window.addEventListener('blur', endMark);
   window.addEventListener('mousedown', onMouseDown, true);
   window.addEventListener('resize', render);
   window.addEventListener('scroll', render, true);

@@ -1,13 +1,14 @@
 // Shared by the content script, the settings page and the popup.
 var CK = (function () {
-  var ACTIONS = ['up', 'down', 'left', 'right', 'select'];
+  var ACTIONS = ['up', 'down', 'left', 'right', 'select', 'mark'];
 
   var ACTION_LABELS = {
     up: 'Move up',
     down: 'Move down',
     left: 'Move left',
     right: 'Move right',
-    select: 'Click square'
+    select: 'Click square',
+    mark: 'Highlight / arrow (hold)'
   };
 
   // Keys are stored as KeyboardEvent.code so layouts like WASD stay on the same
@@ -66,6 +67,9 @@ var CK = (function () {
       }
     }
   ];
+
+  // Right-click equivalent: tap to toggle a red highlight, hold while moving to draw an arrow.
+  PRESETS.forEach(function (p) { p.keys.mark = ['KeyC']; });
 
   var DEFAULTS = {
     enabled: true,
@@ -150,7 +154,8 @@ var CK = (function () {
       if (saved[k] !== undefined) out[k] = saved[k];
     });
     ACTIONS.forEach(function (a) {
-      if (!Array.isArray(out.keys[a])) out.keys[a] = [];
+      // bindings saved before an action existed get that action's default
+      if (!Array.isArray(out.keys[a])) out.keys[a] = (DEFAULTS.keys[a] || []).slice();
     });
     return out;
   }
